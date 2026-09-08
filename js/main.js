@@ -154,28 +154,29 @@ function addRamp(x, z, yaw, L, W, h1) {
   const hw = W / 2;
   const hl = L / 2;
 
-  // Prisma triangular: la cara superior sube de (-hl,h0) hasta (+hl,h1) a lo largo del eje local +X
-  const geo = new THREE.BufferGeometry();
-  const v = new Float32Array([
-    // cara superior (slope)
-    -hl, h0, -hw,   hl, h1, -hw,   hl, h1, hw,   -hl, h0, hw,
-    // pared trasera vertical (lado bajo)
-    -hl, 0, -hw,   -hl, h0, -hw,   -hl, h0, hw,   -hl, 0, hw,
-    // piso
+  // Prisma triangular con TODAS las caras orientadas hacia afuera (sin culling raro)
+  const pos = [
+    // 0: slope-low-left, 1: slope-low-right, 2: slope-high-right, 3: slope-high-left
+    -hl, h0, -hw,   -hl, h0, hw,   hl, h1, hw,   hl, h1, -hw,
+    // 4: base-low-left, 5: base-high-left, 6: base-high-right, 7: base-low-right
     -hl, 0, -hw,   hl, 0, -hw,   hl, 0, hw,   -hl, 0, hw,
-    // extremo izquierdo (z=-hw)
-    -hl, 0, -hw,   hl, h1, -hw,   -hl, h0, -hw,
-    // extremo derecho (z=+hw)
-    -hl, 0, hw,   -hl, h0, hw,   hl, h1, hw,
-  ]);
-  const idx = [];
-  // triángulos cuádruples por cara
-  for (let f = 0; f < 3; f++) {
-    const b = f * 4;
-    idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
-  }
-  idx.push(12, 13, 14, 15, 16, 17);
-  geo.setAttribute('position', new THREE.BufferAttribute(v, 3));
+  ];
+  const idx = [
+    // cara superior (slope) - normal hacia arriba
+    0, 1, 2,  0, 2, 3,
+    // piso - normal hacia abajo
+    4, 5, 6,  4, 6, 7,
+    // pared trasera (lado bajo, -X) - normal hacia -X
+    7, 1, 0,  7, 0, 4,
+    // extremo cerrado z=-hw - normal hacia -Z
+    4, 0, 3,
+    // extremo cerrado z=+hw - normal hacia +Z
+    7, 6, 2,
+    // pared del lado alto (+X) - normal hacia +X
+    5, 3, 2,  5, 6, 3,
+  ];
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
   geo.setIndex(idx);
   geo.computeVertexNormals();
 
