@@ -47,6 +47,12 @@ function initScene() {
   scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x0b0d12, 80, 220);
 
+  // Fondo de skybox con la imagen del espacio
+  new THREE.TextureLoader().load('textures/espacio.png', (tex) => {
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    scene.background = tex;
+  });
+
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
   camera.position.set(0, 22, 28);
 
