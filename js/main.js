@@ -384,8 +384,29 @@ weaponBtn.addEventListener('click', switchWeapon);
 
 // ---------- TECLADO (PC) ----------
 const keys = {};
+const modeBtn = document.getElementById('mode-btn');
+
+// Autodetección: pantalla táctil chica => celular, si no => PC
+let inputMode = (navigator.maxTouchPoints > 0 && window.innerWidth < 840) ? 'mobile' : 'pc';
+applyInputMode();
+
+function applyInputMode() {
+  const isPc = inputMode === 'pc';
+  document.getElementById('controls').style.display = isPc ? 'none' : 'block';
+  modeBtn.textContent = isPc ? '📱 MODO CELULAR' : '⌨️ MODO PC';
+  myState.inputX = 0;
+  myState.inputY = 0;
+}
+
+function toggleInputMode() {
+  inputMode = inputMode === 'pc' ? 'mobile' : 'pc';
+  applyInputMode();
+}
+
+modeBtn.addEventListener('click', toggleInputMode);
 
 window.addEventListener('keydown', (e) => {
+  if (inputMode !== 'pc') return;
   if (['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE'].includes(e.code)) e.preventDefault();
   keys[e.code] = true;
   if (!e.repeat) {
@@ -442,8 +463,18 @@ function send(obj) {
 function connect(url) {
   return new Promise((resolve, reject) => {
     ws = new WebSocket(url);
-    ws.onopen = () => resolve();
-    ws.onerror = () => reject(new Error('No se pudo conectar al servidor'));
+    const timer = setTimeout(() => {
+      try { ws.close(); } catch (e) { /* noop */ }
+      reject(new Error('Timeout de conexión'));
+    }, 3000);
+    ws.onopen = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    ws.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error('No se pudo conectar al servidor'));
+    };
     ws.onmessage = (event) => handleServerMessage(event.data);
     ws.onclose = () => { console.log('Desconectado del servidor'); };
   });
@@ -674,8 +705,8 @@ function animate(time) {
   const dt = Math.min((time - lastTime) / 1000, 0.05);
   lastTime = time;
 
-  // teclado (WASD) con prioridad sobre el joystick
-  if (keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD']) {
+  // teclado (WASD) con prioridad sobre el joystick (solo en modo PC)
+  if (inputMode === 'pc' && (keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'])) {
     myState.inputX = (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0);
     myState.inputY = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0);
   }
@@ -744,18 +775,16 @@ async function startGame() {
   initScene();
   myState.name = name;
 
+  // Solo/malo: si el server no responde, se juega igual en modo solitario
   try {
     await connect(serverUrl);
     send({ type: 'name', name });
-    updateHpBar();
-    animate(0);
   } catch (err) {
-    console.error('Error de conexión:', err);
-    document.getElementById('menu').style.display = 'flex';
-    document.getElementById('game').style.display = 'none';
-    started = false;
-    alert('No se pudo conectar al servidor. Para jugar online, levantá el server con "npm start" y accedé desde el celular.');
+    console.warn('Sin servidor online, se juega en modo solitario');
+    myState.id = 'local';
   }
+  updateHpBar();
+  animate(0);
 }
 
 document.getElementById('play-btn').addEventListener('click', startGame);

@@ -161,6 +161,21 @@ html, body {
   border: 1px solid rgba(255,255,255,0.2);
 }
 
+#mode-btn {
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+#mode-btn:active {
+  background: rgba(255,123,0,0.5);
+}
+
 #kill-feed {
   position: absolute;
   top: 8px;
