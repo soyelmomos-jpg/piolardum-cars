@@ -42,7 +42,7 @@ npm start
 ### Opción A: Juego en GitHub Pages + server gratis en la nube
 
 1. Subí este repo a GitHub
-2. Activá **GitHub Pages** (branch `main`, carpeta `/public`) → así el juego queda accesible desde `https://TU-USUARIO.github.io/PIOLARDUM-CARS/`
+2. Activá **GitHub Pages** (branch `master`, carpeta `/`) → así el juego queda accesible desde `https://TU-USUARIO.github.io/PIOLARDUM-CARS/`
 3. Desplegá el servidor en un servicio gratis tipo Render/Railway:
    - Comando de inicio: `npm start`
    - Obtenés una URL tipo `https://piolardum-cars.onrender.com`

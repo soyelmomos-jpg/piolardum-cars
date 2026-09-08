@@ -6,8 +6,8 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Servir los archivos estáticos del juego (carpeta public/)
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Servir los archivos estáticos del juego (raíz del proyecto)
+app.use(express.static(path.join(__dirname, '..')));
 
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
