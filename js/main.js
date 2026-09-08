@@ -550,9 +550,10 @@ myState.jumpEnabled = false;
 let vy = 0;
 let grounded = true;
 const GROUND_Y = 0;
-const GRAVITY = -38;
-const JUMP_SPEED = 16;
-const LAUNCH_SPEED = 11;
+const GRAVITY = -16; // gravedad baja = quedas más tiempo en el aire
+const TERMINAL_VEL = -22; // velocidad máxima de caída (no caes como piedra)
+const JUMP_SPEED = 17;
+const LAUNCH_SPEED = 14;
 
 function openCmd() {
   cmdOpen = true;
@@ -924,8 +925,9 @@ function animate(time) {
       vy = LAUNCH_SPEED;
       grounded = false;
     }
-  } else {
+} else {
     vy += GRAVITY * dt;
+    if (vy < TERMINAL_VEL) vy = TERMINAL_VEL;
     myCar.group.position.y += vy * dt;
     if (myCar.group.position.y <= groundY) {
       myCar.group.position.y = groundY;
@@ -933,6 +935,9 @@ function animate(time) {
       grounded = true;
     }
   }
+
+  // control en el aire: mientras estás volando podés movete con WASD/joystick
+  // (ya se aplica el inputX/inputY más arriba en cada frame)
 
   updateGun();
   updateBullets(dt);
