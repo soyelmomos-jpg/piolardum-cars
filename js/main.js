@@ -419,6 +419,11 @@ window.addEventListener('keyup', (e) => {
   keys[e.code] = false;
 });
 
+// Seguro: si la ventana pierde el foco (alt-tab, clic afuera), soltar todas las teclas
+window.addEventListener('blur', () => {
+  for (const k in keys) keys[k] = false;
+});
+
 // ---------- ARMAS: DISPARAR ----------
 function fire() {
   if (!myState.alive) return;
@@ -705,8 +710,8 @@ function animate(time) {
   const dt = Math.min((time - lastTime) / 1000, 0.05);
   lastTime = time;
 
-  // teclado (WASD) con prioridad sobre el joystick (solo en modo PC)
-  if (inputMode === 'pc' && (keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'])) {
+  // teclado (WASD) en modo PC: se calcula cada frame y se resetea a 0 al soltar
+  if (inputMode === 'pc') {
     myState.inputX = (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0);
     myState.inputY = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0);
   }
