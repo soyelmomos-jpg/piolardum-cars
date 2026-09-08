@@ -382,6 +382,22 @@ window.addEventListener('mouseup', onJoystickEnd);
 shootBtn.addEventListener('mousedown', fire);
 weaponBtn.addEventListener('click', switchWeapon);
 
+// ---------- TECLADO (PC) ----------
+const keys = {};
+
+window.addEventListener('keydown', (e) => {
+  if (['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE'].includes(e.code)) e.preventDefault();
+  keys[e.code] = true;
+  if (!e.repeat) {
+    if (e.code === 'KeyE') switchWeapon();
+    if (e.code === 'Space') fire(); // el cooldown de fuego maneja el resto
+  }
+});
+
+window.addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+});
+
 // ---------- ARMAS: DISPARAR ----------
 function fire() {
   if (!myState.alive) return;
@@ -658,7 +674,13 @@ function animate(time) {
   const dt = Math.min((time - lastTime) / 1000, 0.05);
   lastTime = time;
 
-  // auto: input del joystick
+  // teclado (WASD) con prioridad sobre el joystick
+  if (keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD']) {
+    myState.inputX = (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0);
+    myState.inputY = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0);
+  }
+
+  // auto: input del joystick/teclado
   const dirY = myState.inputY; // -1 atrás, 1 adelante
   // giro
   if (myState.inputX !== 0) {

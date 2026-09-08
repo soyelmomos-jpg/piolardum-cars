@@ -19,7 +19,13 @@ Un juego 3D de **autos, armas y explosiones** que se juega **desde el celular**.
 - **Botón rojo (🔫)**: disparar
 - **Botón naranja (💣)**: cambiar de arma
 
-**En la PC** también funciona con el mouse (arrastrá el joystick, clickeá para disparar).
+**En la PC** también se juega:
+
+- **W / A / S / D**: mover y girar
+- **ESPACIO**: disparar (mantenelo apretado para disparar seguido)
+- **E**: cambiar de arma
+
+También podés hacer clic en el joystick y arrastrarlo con el mouse.
 
 ## 🛠️ Cómo correrlo
 
