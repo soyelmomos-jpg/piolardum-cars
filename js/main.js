@@ -3,10 +3,10 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
 // ---------- CONSTANTES ----------
 const COLORS = [0xff3333, 0x33ff33, 0x3333ff, 0xffcc00, 0xff66ff, 0x00ffff];
-const MAP_SIZE = 120; // arena cuadrada
-const FIRE_RATE = { pistol: 250, bazooka: 900 }; // ms entre disparos
 const DMG = { pistol: 15, bazooka: 50 };
 const SPEED = 22;
+const MAP_SIZE = 250; // arena cuadrada (mapa grande)
+const FIRE_RATE = { pistol: 250, bazooka: 900 }; // ms entre disparos
 
 // ---------- ESTADO DEL JUGADOR ----------
 const myState = {
@@ -45,7 +45,7 @@ function initScene() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x0b0d12, 80, 220);
+  scene.fog = new THREE.Fog(0x0b0d12, 120, 520);
 
   // Fondo de skybox con la imagen del espacio
   new THREE.TextureLoader().load('textures/espacio.png', (tex) => {
@@ -84,9 +84,12 @@ function initScene() {
   }
 
   // Grid sutil
-  const grid = new THREE.GridHelper(MAP_SIZE, 24, 0x55555f, 0x2a2a30);
+  const grid = new THREE.GridHelper(MAP_SIZE, 50, 0x55555f, 0x2a2a30);
   grid.position.y = 0.02;
   scene.add(grid);
+
+  // Rampas por el mapa
+  buildRamps();
 
   // Crea mi auto y arma
   myCar = createCar(myState.color);
@@ -126,6 +129,99 @@ function addBox(x, z) {
   box.traverse((m) => { m.userData.isObstacle = true; });
   obstacles.push(box);
   scene.add(box);
+}
+
+// ---------- RAMPAS ----------
+const ramps = []; // { x, z, yaw, L, W, h0, h1 }
+
+function buildRamps() {
+  const RAMP_COUNT = 18;
+  for (let i = 0; i < RAMP_COUNT; i++) {
+    const L = 8 + Math.random() * 5;
+    const W = 4 + Math.random() * 2;
+    const h1 = 2.5 + Math.random() * 1.8;
+    addRamp(
+      Math.random() * (MAP_SIZE - 60) - (MAP_SIZE - 60) / 2,
+      Math.random() * (MAP_SIZE - 60) - (MAP_SIZE - 60) / 2,
+      Math.random() * Math.PI * 2,
+      L, W, h1
+    );
+  }
+}
+
+function addRamp(x, z, yaw, L, W, h1) {
+  const h0 = 0.3;
+  const hw = W / 2;
+  const hl = L / 2;
+
+  // Prisma triangular: la cara superior sube de (-hl,h0) hasta (+hl,h1) a lo largo del eje local +X
+  const geo = new THREE.BufferGeometry();
+  const v = new Float32Array([
+    // cara superior (slope)
+    -hl, h0, -hw,   hl, h1, -hw,   hl, h1, hw,   -hl, h0, hw,
+    // pared trasera vertical (lado bajo)
+    -hl, 0, -hw,   -hl, h0, -hw,   -hl, h0, hw,   -hl, 0, hw,
+    // piso
+    -hl, 0, -hw,   hl, 0, -hw,   hl, 0, hw,   -hl, 0, hw,
+    // extremo izquierdo (z=-hw)
+    -hl, 0, -hw,   hl, h1, -hw,   -hl, h0, -hw,
+    // extremo derecho (z=+hw)
+    -hl, 0, hw,   -hl, h0, hw,   hl, h1, hw,
+  ]);
+  const idx = [];
+  // triángulos cuádruples por cara
+  for (let f = 0; f < 3; f++) {
+    const b = f * 4;
+    idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+  }
+  idx.push(12, 13, 14, 15, 16, 17);
+  geo.setAttribute('position', new THREE.BufferAttribute(v, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+
+  const mat = new THREE.MeshStandardMaterial({ color: 0x6a5a8a, roughness: 0.7 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+
+  const group = new THREE.Group();
+  group.add(mesh);
+  group.position.set(x, 0, z);
+  group.rotation.y = yaw;
+  scene.add(group);
+
+  ramps.push({ x, z, yaw, L, W, h0, h1 });
+}
+
+// Devuelve el alto del suelo en (wx, wz): 0 en el piso, o la altura de la rampa si está encima
+function getGroundHeight(wx, wz) {
+  let gh = 0;
+  for (const r of ramps) {
+    const dx = wx - r.x;
+    const dz = wz - r.z;
+    // a coordenadas locales de la rampa
+    const lx = dx * Math.cos(r.yaw) + dz * Math.sin(r.yaw);
+    const lz = -dx * Math.sin(r.yaw) + dz * Math.cos(r.yaw);
+    if (Math.abs(lz) <= r.W / 2 && lx >= -r.L / 2 && lx <= r.L / 2) {
+      const t = (lx + r.L / 2) / r.L;
+      gh = Math.max(gh, r.h0 + (r.h1 - r.h0) * t);
+    }
+  }
+  return gh;
+}
+
+// true si el auto está cerca del borde alto de una rampa (para salir volando)
+function getRampLaunch(wx, wz) {
+  for (const r of ramps) {
+    const dx = wx - r.x;
+    const dz = wz - r.z;
+    const lx = dx * Math.cos(r.yaw) + dz * Math.sin(r.yaw);
+    const lz = -dx * Math.sin(r.yaw) + dz * Math.cos(r.yaw);
+    if (Math.abs(lz) <= r.W / 2 && lx >= r.L / 2 - 1.5 && lx <= r.L / 2 + 3) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // ---------- AUTO ----------
@@ -419,7 +515,7 @@ window.addEventListener('keydown', (e) => {
   if (!e.repeat) {
     if (e.code === 'KeyE') switchWeapon();
     if (e.code === 'Space') fire(); // el cooldown de fuego maneja el resto
-    if (e.code === 'KeyJ' && myState.jumpEnabled) jump();
+    if (e.code === 'KeyR' && myState.jumpEnabled) jump();
   }
   // detección de "cmd" escrita con el teclado
   if (!e.repeat && /^[a-zA-Z]$/.test(e.key)) {
@@ -451,9 +547,11 @@ let cmdBuffer = '';
 myState.jumpEnabled = false;
 
 let vy = 0;
+let grounded = true;
 const GROUND_Y = 0;
 const GRAVITY = -38;
 const JUMP_SPEED = 16;
+const LAUNCH_SPEED = 11;
 
 function openCmd() {
   cmdOpen = true;
@@ -474,7 +572,7 @@ function submitCmd() {
   const val = cmdInput.value.trim().toLowerCase();
   if (val === 'jumppower') {
     myState.jumpEnabled = true;
-    cmdFeedback.textContent = '✅ JUMPPOWER ACTIVADO — apretá J para saltar';
+    cmdFeedback.textContent = '✅ JUMPPOWER ACTIVADO — apretá R para saltar';
     cmdFeedback.style.color = '#33ff33';
   } else if (val === '') {
     closeCmd();
@@ -486,8 +584,9 @@ function submitCmd() {
 
 function jump() {
   if (!myState.jumpEnabled) return;
-  if (myCar.group.position.y <= GROUND_Y + 0.01) {
+  if (grounded && myCar.group.position.y <= GROUND_Y + 0.01) {
     vy = JUMP_SPEED;
+    grounded = false;
   }
 }
 
@@ -814,13 +913,23 @@ function animate(time) {
   myCar.group.position.x = THREE.MathUtils.clamp(myCar.group.position.x, -half, half);
   myCar.group.position.z = THREE.MathUtils.clamp(myCar.group.position.z, -half, half);
 
-  // salto (JUMPPOWER): gravedad solo si está activado
-  if (myState.jumpEnabled) {
+  // vertical: sigue las rampas y maneja el salto
+  const groundY = getGroundHeight(myCar.group.position.x, myCar.group.position.z);
+  if (grounded) {
+    myCar.group.position.y = groundY;
+    vy = 0;
+    // al llegar al borde alto de una rampa, salir volando
+    if (getRampLaunch(myCar.group.position.x, myCar.group.position.z)) {
+      vy = LAUNCH_SPEED;
+      grounded = false;
+    }
+  } else {
     vy += GRAVITY * dt;
     myCar.group.position.y += vy * dt;
-    if (myCar.group.position.y <= GROUND_Y) {
-      myCar.group.position.y = GROUND_Y;
+    if (myCar.group.position.y <= groundY) {
+      myCar.group.position.y = groundY;
       vy = 0;
+      grounded = true;
     }
   }
 

@@ -24,8 +24,9 @@ Un juego 3D de **autos, armas y explosiones** que se juega **desde el celular**.
 - **W / A / S / D**: mover y girar
 - **ESPACIO**: disparar (mantenelo apretado para disparar seguido)
 - **E**: cambiar de arma
+- **R**: saltar (si activaste `jumppower` con el comando `cmd`)
 
-El juego detecta el dispositivo automáticamente y además tiene un **botón arriba a la derecha para elegir modo celular o PC**. También podés hacer clic en el joystick y arrastrarlo con el mouse.
+El mapa es grande y tiene **rampas**: subilas para saltar rampas y volar. El juego detecta el dispositivo automáticamente y además tiene un **botón arriba a la derecha para elegir modo celular o PC**. También podés hacer clic en el joystick y arrastrarlo con el mouse.
 
 > 💡 **Sin server:** si no hay un servidor online disponible, el juego arranca igual en **modo solitario** (sin multijugador).
 
