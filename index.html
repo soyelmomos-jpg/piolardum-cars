@@ -52,6 +52,16 @@
     <div id="switch-warning">
       <p>📱 Celular: joystick + botones | ⌨️ PC: WASD moverte · ESPACIO disparar · E cambiar arma</p>
     </div>
+
+    <!-- Panel de comandos (cheats) -->
+    <div id="cmd-overlay" style="display:none">
+      <div class="cmd-box">
+        <h3>COMANDO?</h3>
+        <input id="cmd-input" type="text" maxlength="20" placeholder="escribí un comando..." autocomplete="off" spellcheck="false">
+        <p id="cmd-feedback"></p>
+        <p class="cmd-hint">Enter = ejecutar · Esc = cerrar</p>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="js/main.js"></script>

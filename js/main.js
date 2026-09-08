@@ -412,12 +412,24 @@ function toggleInputMode() {
 modeBtn.addEventListener('click', toggleInputMode);
 
 window.addEventListener('keydown', (e) => {
+  if (cmdOpen) return;
   if (inputMode !== 'pc') return;
   if (['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE'].includes(e.code)) e.preventDefault();
   keys[e.code] = true;
   if (!e.repeat) {
     if (e.code === 'KeyE') switchWeapon();
     if (e.code === 'Space') fire(); // el cooldown de fuego maneja el resto
+    if (e.code === 'KeyJ' && myState.jumpEnabled) jump();
+  }
+  // detección de "cmd" escrita con el teclado
+  if (!e.repeat && /^[a-zA-Z]$/.test(e.key)) {
+    cmdBuffer = (cmdBuffer + e.key).toLowerCase().slice(-3);
+    if (cmdBuffer === 'cmd' && !cmdOpen) {
+      cmdBuffer = '';
+      openCmd();
+    }
+  } else if (!e.repeat) {
+    cmdBuffer = '';
   }
 });
 
@@ -428,6 +440,66 @@ window.addEventListener('keyup', (e) => {
 // Seguro: si la ventana pierde el foco (alt-tab, clic afuera), soltar todas las teclas
 window.addEventListener('blur', () => {
   for (const k in keys) keys[k] = false;
+});
+
+// ---------- COMANDOS (CHEATS) ----------
+const cmdOverlay = document.getElementById('cmd-overlay');
+const cmdInput = document.getElementById('cmd-input');
+const cmdFeedback = document.getElementById('cmd-feedback');
+let cmdOpen = false;
+let cmdBuffer = '';
+myState.jumpEnabled = false;
+
+let vy = 0;
+const GROUND_Y = 0;
+const GRAVITY = -38;
+const JUMP_SPEED = 16;
+
+function openCmd() {
+  cmdOpen = true;
+  cmdOverlay.style.display = 'flex';
+  cmdFeedback.textContent = '';
+  cmdFeedback.style.color = '#ccc';
+  cmdInput.value = '';
+  setTimeout(() => cmdInput.focus(), 10);
+}
+
+function closeCmd() {
+  cmdOpen = false;
+  cmdOverlay.style.display = 'none';
+  cmdInput.value = '';
+}
+
+function submitCmd() {
+  const val = cmdInput.value.trim().toLowerCase();
+  if (val === 'jumppower') {
+    myState.jumpEnabled = true;
+    cmdFeedback.textContent = '✅ JUMPPOWER ACTIVADO — apretá J para saltar';
+    cmdFeedback.style.color = '#33ff33';
+  } else if (val === '') {
+    closeCmd();
+  } else {
+    cmdFeedback.textContent = '❌ Comando desconocido: ' + val;
+    cmdFeedback.style.color = '#ff5555';
+  }
+}
+
+function jump() {
+  if (!myState.jumpEnabled) return;
+  if (myCar.group.position.y <= GROUND_Y + 0.01) {
+    vy = JUMP_SPEED;
+  }
+}
+
+cmdInput.addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitCmd();
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closeCmd();
+  }
 });
 
 // ---------- ARMAS: DISPARAR ----------
@@ -526,9 +598,9 @@ function handleServerMessage(raw) {
     case 'move':
       const p = otherPlayers.get(msg.id);
       if (p) {
-        p.car.group.position.set(msg.x, 0, msg.z);
+        p.car.group.position.set(msg.x, msg.y, msg.z);
         p.car.group.rotation.y = msg.rot;
-        p.nameSprite.position.set(msg.x, 2.6, msg.z);
+        p.nameSprite.position.set(msg.x, msg.y + 2.6, msg.z);
         p.nameSprite.rotation.y = msg.rot;
       }
       break;
@@ -590,6 +662,7 @@ function respawn() {
   myState.alive = true;
   myState.hp = myState.hpMax;
   updateHpBar();
+  vy = 0;
   myCar.group.visible = true;
   myGun.visible = true;
   myCar.group.position.set(Math.random() * (MAP_SIZE - 20) - (MAP_SIZE - 20) / 2, 0,
@@ -600,7 +673,7 @@ function respawn() {
 function updateGun() {
   // el arma se coloca delante del auto, apuntando hacia adelante
   myGun.position.copy(myCar.group.position);
-  myGun.position.y = 1.4;
+  myGun.position.y = myCar.group.position.y + 1.4;
   const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(myCar.group.quaternion);
   myGun.position.add(forward.multiplyScalar(2.2));
   myGun.rotation.copy(myCar.group.rotation);
@@ -611,8 +684,8 @@ function updateGun() {
   // mira en tercera persona: cámara sigue al auto con rotación opuesta
   camera.position.x = myCar.group.position.x + Math.sin(myCar.group.rotation.y) * 12; // offset atrás
   camera.position.z = myCar.group.position.z + Math.cos(myCar.group.rotation.y) * 12;
-  camera.position.y = 9;
-  camera.lookAt(myCar.group.position.x, 1, myCar.group.position.z);
+  camera.position.y = myCar.group.position.y + 9;
+  camera.lookAt(myCar.group.position.x, myCar.group.position.y + 1, myCar.group.position.z);
 }
 
 function updateBullets(dt) {
@@ -702,7 +775,7 @@ function sendMove() {
   send({
     type: 'move',
     x: myCar.group.position.x,
-    y: 0,
+    y: myCar.group.position.y,
     z: myCar.group.position.z,
     rot: myCar.group.rotation.y,
   });
@@ -740,6 +813,16 @@ function animate(time) {
   const half = MAP_SIZE / 2 - 3;
   myCar.group.position.x = THREE.MathUtils.clamp(myCar.group.position.x, -half, half);
   myCar.group.position.z = THREE.MathUtils.clamp(myCar.group.position.z, -half, half);
+
+  // salto (JUMPPOWER): gravedad solo si está activado
+  if (myState.jumpEnabled) {
+    vy += GRAVITY * dt;
+    myCar.group.position.y += vy * dt;
+    if (myCar.group.position.y <= GROUND_Y) {
+      myCar.group.position.y = GROUND_Y;
+      vy = 0;
+    }
+  }
 
   updateGun();
   updateBullets(dt);

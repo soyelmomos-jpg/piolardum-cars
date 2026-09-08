@@ -278,6 +278,60 @@ html, body {
   font-size: 1.1rem;
 }
 
+/* ---------- COMANDOS (CHEATS) ---------- */
+#cmd-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 50;
+  background: rgba(0,0,0,0.55);
+  padding-top: 14vh;
+}
+
+.cmd-box {
+  background: #0b0d12;
+  border: 1px solid #ff7b00;
+  border-radius: 12px;
+  padding: 20px;
+  width: min(90%, 340px);
+  text-align: center;
+  box-shadow: 0 0 25px rgba(255,123,0,0.3);
+}
+
+.cmd-box h3 {
+  color: #ff7b00;
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+}
+
+.cmd-box input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ff7b00;
+  background: #111;
+  color: #fff;
+  font-size: 1rem;
+  text-transform: lowercase;
+  outline: none;
+}
+
+#cmd-feedback {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  min-height: 1.2em;
+  color: #ccc;
+}
+
+.cmd-hint {
+  margin-top: 6px;
+  font-size: 0.7rem;
+  opacity: 0.5;
+}
+
 /* Aviso de pantalla grande */
 #switch-warning {
   position: absolute;
