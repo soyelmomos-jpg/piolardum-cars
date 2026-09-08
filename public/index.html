@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Piolardum Cars</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Menú principal -->
+  <div id="menu">
+    <h1 class="logo">🚗 PIOLARDUM <span>CARS</span></h1>
+    <p class="subtitle">Autos, armas y explosiones online</p>
+
+    <div class="menu-box">
+      <label>Tu nombre</label>
+      <input id="name-input" type="text" maxlength="12" placeholder="Elegí tu nombre" value="Piolardum">
+      <label>Servidor</label>
+      <input id="server-input" type="text" value="" placeholder="ws://host:8080">
+      <button id="play-btn">🎮 JUGAR</button>
+    </div>
+
+    <p class="hint">El modo online sincroniza a todos los jugadores. Copiá la URL del server para jugar con amigos.</p>
+  </div>
+
+  <!-- HUD del juego -->
+  <div id="game" style="display:none">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD widgets -->
+    <div id="hud">
+      <div id="hp-bar"><div id="hp-fill"></div></div>
+      <div id="weapon-indicator">🔫 PISTOLA</div>
+      <div id="kill-feed"></div>
+      <div id="players-list"></div>
+    </div>
+
+    <!-- Controles táctiles (celular) -->
+    <div id="controls">
+      <div id="joystick-area">
+        <div id="joystick-base">
+          <div id="joystick-knob"></div>
+        </div>
+      </div>
+      <div id="action-buttons">
+        <button id="shoot-btn" class="action-btn shoot">🔫</button>
+        <button id="weapon-btn" class="action-btn weapon">💣</button>
+      </div>
+    </div>
+
+    <div id="switch-warning">
+      <p>Probalo desde el celular para experiencia completa.</p>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
